@@ -1,5 +1,5 @@
 from langchain_openai import AzureChatOpenAI
-from langchain.schema import HumanMessage
+from langchain_core.messages import HumanMessage
 import os
 from dotenv import load_dotenv
 

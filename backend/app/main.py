@@ -1,11 +1,23 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
 from .config import FRONTEND_ORIGIN
-from .llm import chat_with_llm
+from backend.app.routers.health import router as health_router
+from backend.app.routers.chat import router as chat_router
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("App starting up...")
+    # Startup: init DB connections, load models, warm caches, etc.
+    # Example: app.state.db = await connect_db(settings.DATABASE_URL)
+    yield
+    # Shutdown: close connections, flush buffers, etc.
+    # Example: await app.state.db.close()
+
+app = FastAPI(
+    title="LangChain Azure OpenAI Chatbot Backend",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,13 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class ChatRequest(BaseModel):
-    message: str
-
-class ChatResponse(BaseModel):
-    answer: str
-
-@app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
-    answer = chat_with_llm(req.message)
-    return {"answer": answer}
+# Register routers (versioning is optional but common)
+app.include_router(health_router, prefix="/v1", tags=["health"])
+app.include_router(chat_router, prefix="/v1", tags=["chat"])
